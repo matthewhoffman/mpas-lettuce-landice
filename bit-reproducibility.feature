@@ -6,8 +6,8 @@ Feature: Bit-Reproducible simulations
 	Scenario: 2 vs 4 procs with dome shallow-ice
 		Given A setup test environment
 		Given A "dome" "sia" test
-		Given A 2 processor MPAS "landice_model" run
-		Given A 4 processor MPAS "landice_model" run
+		Given A 2 processor MPAS "landice_model_testing" run
+		Given A 4 processor MPAS "landice_model_testing" run
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
 		Then I clean the test directory
@@ -15,18 +15,19 @@ Feature: Bit-Reproducible simulations
 	Scenario: 1 vs 4 procs with dome shallow-ice
 		Given A setup test environment
 		Given A "dome" "sia" test
-		Given A 1 processor MPAS "landice_model" run
-		Given A 4 processor MPAS "landice_model" run
+		Given A 1 processor MPAS "landice_model_testing" run
+		Given A 4 processor MPAS "landice_model_testing" run
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
 		Then I clean the test directory
 
-	Scenario: 4 vs 4 procs with dome shallow-ice against develop
+	Scenario: 4 vs 4 procs with dome shallow-ice *against trusted*
 		Given A setup test environment
 		Given A "dome" "sia" test
-		Given A 4 processor MPAS "landice_model" run
-		Given A 4 processor MPAS "landice_model_develop" run
+		Given A 4 processor MPAS "landice_model_testing" run
+		Given A 4 processor MPAS "landice_model_trusted" run
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
 		Then I clean the test directory
+
 

@@ -1,118 +1,135 @@
 import sys, os, glob, shutil, numpy, math
 import subprocess
-
-from netCDF4 import *
 from netCDF4 import Dataset as NetCDFFile
-from pylab import *
-
 from lettuce import *
 
-from collections import defaultdict
 
 dev_null = open(os.devnull, 'w')
 
 
+# ==============================================================================
 @step('A "([^"]*)" "([^"]*)" test')
 def get_test_case(step, test, velocity_solver):
 	world.basedir = os.getcwd()
-	world.rundir = "%s"%(test)
+	world.test = "%s"%(test)
 	world.num_runs = 0
 
-	# If we don't have the test case tarball, then go get it.
-	if not os.path.exists("%s/%s.tar.gz"%(world.basedir, world.rundir)):
-		arg = "https://dl.dropboxusercontent.com/u/30481359/%s.tar.gz"%(world.rundir)
-		subprocess.call(['wget', '--no-check-certificate', arg], stdout=dev_null, stderr=dev_null)
+	# ===============
+	#Setup trusted...
+	# ===============
 
-	if not os.path.exists("%s/%s"%(world.basedir, world.rundir)):
-		# unpack the test
-		arg = "%s.tar.gz"%world.rundir
-		subprocess.call(['tar', 'zxf', arg], stdout=dev_null, stderr=dev_null)
-
-		# Setup a default namelist that we can modify later
-		arg1 = "%s/namelist.input"%world.rundir
-		arg2 = "%s/namelist.input.default"%world.rundir 
-		subprocess.call(['cp', arg1, arg2], stdout=dev_null, stderr=dev_null)
-
-	os.chdir(world.rundir)
-	if os.path.exists("%s/landice_model_develop"%(world.basedir)):
-		world.develop_exists = True
-		command = "ln"
-		arg1 = "-s"
-		arg2 = "../landice_model_develop"
+	# make trusted_tests directory it it doesn't already exist and cd to it.
+	if not os.path.exists("%s/trusted_tests"%(world.basedir)):
+		command = "mkdir"
+		arg1 = "-p"
+		arg2 = "%s/trusted_tests"%(world.basedir)
 		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-	else:
-		world.develop_exists = False
 
+	os.chdir("%s/trusted_tests"%(world.basedir))
+
+	# get test tarball if we don't already have it
+	if not os.path.exists("%s/trusted_tests/%s-2.0.tar.gz"%(world.basedir, world.test)):  # TODO Need to deal with version numbers
+		command = "wget"
+		arg1 = "%s/%s-2.0.tar.gz"%(world.trusted_url, world.test)  # TODO Need to deal with version numbers
+		subprocess.call([command, arg1], stdout=dev_null, stderr=dev_null)
+
+	# untar test if not already done and make a default namelist
+	if not os.path.exists("%s/trusted_tests/%s"%(world.basedir, world.test)):
+		command = "tar"
+		arg1 = "xzf"
+		arg2 = "%s-2.0.tar.gz"%world.test  # TODO Need to deal with version numbers
+		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+		command = "cp"
+		arg1 = "%s/namelist.input"%world.test
+		arg2 = "%s/namelist.input.default"%world.test
+		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+
+	# go into the test directory
+	os.chdir("%s/trusted_tests/%s"%(world.basedir,world.test))
+
+	# link executable
 	command = "ln"
 	arg1 = "-s"
-	arg2 = "../landice_model"
+	arg2 = "%s/trusted/landice_model"%(world.basedir)
+	arg3 = "landice_model_trusted"
+	subprocess.call([command, arg1, arg2, arg3], stdout=dev_null, stderr=dev_null)
+
+	# copy default namelist to standard namelist
+	command = "cp"
+	arg1 = "namelist.input.default"
+	arg2 = "namelist.input"
 	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-#	command = "cp"
-#	arg1 = "namelist.input.default"
-#	arg2 = "namelist.input"
-#	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-
+	# remove any output files
 	command = "rm"
 	arg1 = "-f"
 	arg2 = '\*.output.nc'
 	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-	# Modify the default namelist as needed
-###	namelistfile = open('namelist.input', 'r+')
-###	lines = namelistfile.readlines()
+	os.chdir(world.basedir)
 
-###	for line in lines:
-###		if line.find("config_dt") >= 0:
-###			line_split = line.split(" = ")
-###			world.dt = float(line_split[1])
-###		if line.find("config_time_integrator") >= 0:
-###			line_split = line.split(" = ")
-###			world.old_time_stepper = line_split[1].replace("'","")
+	# ===============
+	#Setup testing...
+	# ===============
 
-###	world.time_stepper_change = False
-###	if world.old_time_stepper.find(time_stepper) < 0:
-###		world.time_stepper_change = True
-###		if world.old_time_stepper.find("split_explicit") >= 0:
-###			world.dt /= 10.0
-###		elif time_stepper.find("split_explicit") >= 0:
-###			world.dt *= 10.0
+	# make testing_tests directory it it doesn't already exist and cd to it.
+	if not os.path.exists("%s/testing_tests"%(world.basedir)):
+		command = "mkdir"
+		arg1 = "-p"
+		arg2 = "%s/testing_tests"%(world.basedir)
+		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-###	duration = seconds_to_timestamp(int(world.dt*2))
+	os.chdir("%s/testing_tests"%(world.basedir))
 
-###	namelistfile.seek(0)
-###	namelistfile.truncate()
+	# get test tarball if we don't already have it
+	if not os.path.exists("%s/testing_tests/%s-2.0.tar.gz"%(world.basedir, world.test)):   # TODO Need to deal with version numbers
+		command = "wget"
+		arg1 = "%s/%s-2.0.tar.gz"%(world.testing_url, world.test)  # TODO Need to deal with version numbers
+		subprocess.call([command, arg1], stdout=dev_null, stderr=dev_null)
 
-###	for line in lines:
-###		new_line = line
-###		if line.find("config_run_duration") >= 0:
-###			new_line = "    config_run_duration = '%s'\n"%(duration)
-###		elif line.find("config_output_interval") >= 0:
-###			new_line = "    config_output_interval = '0000_00:00:01'\n"
-###		elif line.find("config_restart_interval") >= 0:
-###			new_line = "    config_restart_interval = '1000_00:00:01'\n"
-###		elif line.find("config_stats_interval") >= 0:
-###			new_line = "    config_stats_interval = '1000_00:00:01'\n"
-###		elif line.find("config_dt") >= 0:
-###			new_line = "    config_dt = %f\n"%world.dt
-###		elif world.time_stepper_change:
-###			if line.find("config_time_integrator") >= 0:
-###				new_line = "    config_time_integrator = '%s'\n"%(time_stepper)
+	# untar test if not already done and make a default namelist
+	if not os.path.exists("%s/testing_tests/%s"%(world.basedir, world.test)):
+		command = "tar"
+		arg1 = "xzf"
+		arg2 = "%s-2.0.tar.gz"%world.test  # TODO Need to deal with version numbers
+		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+		command = "cp"
+		arg1 = "%s/namelist.input"%world.test
+		arg2 = "%s/namelist.input.default"%world.test
+		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-###		namelistfile.write(new_line)
+	# go into the test directory
+	os.chdir("%s/testing_tests/%s"%(world.basedir,world.test))
 
-###	namelistfile.close()
+	# link executable
+	command = "ln"
+	arg1 = "-s"
+	arg2 = "%s/testing/landice_model"%(world.basedir)
+	arg3 = "landice_model_testing"
+	subprocess.call([command, arg1, arg2, arg3], stdout=dev_null, stderr=dev_null)
 
-###	del lines
+	# copy default namelist to standard namelist
+	command = "cp"
+	arg1 = "namelist.input.default"
+	arg2 = "namelist.input"
+	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+
+	# remove any output files
+	command = "rm"
+	arg1 = "-f"
+	arg2 = '\*.output.nc'
+	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
 	os.chdir(world.basedir)
 
 
-
+# ==============================================================================
 @step('I compute the Halfar RMS')
 def compute_rms(step):
 	world.halfarRMS=float(subprocess.check_output('python ' + world.rundir + '/halfar.py -f ' + world.rundir + '/' +  world.run1 + ' -n | grep "^* RMS error =" | cut -d "=" -f 2 \n', shell='/bin/bash'))
 
+
+# ==============================================================================
 @step('I see Halfar RMS of <20')
 def check_rms_values(step):
 	if world.halfarRMS == []:
