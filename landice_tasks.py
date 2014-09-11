@@ -126,7 +126,8 @@ def get_test_case(step, test, velocity_solver):
 # ==============================================================================
 @step('I compute the Halfar RMS')
 def compute_rms(step):
-	world.halfarRMS=float(subprocess.check_output('python ' + world.rundir + '/halfar.py -f ' + world.rundir + '/' +  world.run1 + ' -n | grep "^* RMS error =" | cut -d "=" -f 2 \n', shell='/bin/bash'))
+	world.halfarRMS=float(subprocess.check_output('python ' + world.run1dir + '/halfar.py -f ' + world.run1 + ' -n | grep "^* RMS error =" | cut -d "=" -f 2 \n', shell='/bin/bash'))
+	world.message = "      -- Halfar RMS (m) = " + str(world.halfarRMS) + " --"
 
 
 # ==============================================================================
