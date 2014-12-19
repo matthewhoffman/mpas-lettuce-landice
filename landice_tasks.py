@@ -8,8 +8,8 @@ dev_null = open(os.devnull, 'w')
 #dev_null = None  # for debugging to see all errors
 
 # ==============================================================================
-@step('A "([^"]*)" "([^"]*)" test')
-def get_test_case(step, test, velocity_solver):
+@step('A "([^"]*)" test')
+def get_test_case(step, test):
 	world.basedir = os.getcwd()
 	world.test = "%s"%(test)
 	world.num_runs = 0
