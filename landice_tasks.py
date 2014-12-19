@@ -100,4 +100,18 @@ def check_rms_values(step):
 		assert world.halfarRMS < 10.0, 'Halfar RMS of %s is greater than 10.0 m'%world.halfarRMS
 
 
+# ==============================================================================
+@step(u'Then I see a circular-shelf maximum speed near 1918 m/yr')
+def then_i_see_a_circular_shelf_maximum_speed_near_1918_m_yr(step):
+	import netCDF4
+	f = netCDF4.Dataset(world.run1)
+	# Get surface speed at time 0
+	uvel = f.variables['uReconstructX'][0,:,0]
+	vvel = f.variables['uReconstructY'][0,:,0]
+	speed = (uvel**2 + vvel**2)**0.5
+	maxspeed = speed.max() * 365.0 * 24.0 * 3600.0
+	print 'Maximum ice shelf speed is:', maxspeed, ' m/yr \n'
+	assert abs(maxspeed - 1918.0) < 50.0, 'Maximum ice shelf speed of %s is different from 1918 m/yr by more than 50 m/yr'%maxspeed
+
+
 
