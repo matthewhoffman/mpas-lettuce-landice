@@ -101,7 +101,7 @@ def check_rms_values(step):
 
 
 # ==============================================================================
-@step(u'Then I see a circular-shelf maximum speed near 1918 m/yr')
+@step(u'I see a circular-shelf maximum speed near 1918 m/yr')
 def then_i_see_a_circular_shelf_maximum_speed_near_1918_m_yr(step):
 	import netCDF4
 	f = netCDF4.Dataset(world.run1)
@@ -112,6 +112,19 @@ def then_i_see_a_circular_shelf_maximum_speed_near_1918_m_yr(step):
 	maxspeed = speed.max() * 365.0 * 24.0 * 3600.0
 	print 'Maximum ice shelf speed is:', maxspeed, ' m/yr \n'
 	assert abs(maxspeed - 1918.0) < 50.0, 'Maximum ice shelf speed of %s is different from 1918 m/yr by more than 50 m/yr'%maxspeed
+
+
+# ==============================================================================
+@step(u'EISMINT2 experiment "([^"]*)"')
+def given_eismint2_experiment_group1(step, experiment):
+	# Redefine the run directory to be the subdirectory where this experiment lives
+	world.test = world.test + '/experiment_' + experiment
+	# Setup the initial conditions for this test
+
+# ==============================================================================
+@step(u'I see a MPAS results within range of EISMINT2 experiment "([^"]*)" benchmarks.')
+def then_i_see_a_mpas_results_within_range_of_eismint2_experiment_group1_benchmarks(step, experiment):
+    assert False, 'This step must be implemented'
 
 
 
