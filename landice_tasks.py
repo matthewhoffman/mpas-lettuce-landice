@@ -5,7 +5,7 @@ from lettuce import *
 
 
 dev_null = open(os.devnull, 'w')
-
+#dev_null = None  # for debugging to see all errors
 
 # ==============================================================================
 @step('A "([^"]*)" "([^"]*)" test')
@@ -14,113 +14,72 @@ def get_test_case(step, test, velocity_solver):
 	world.test = "%s"%(test)
 	world.num_runs = 0
 
-	# ===============
-	#Setup trusted...
-	# ===============
+	# Setup both "trusted_tests" and "testing_tests" directories.  This loop ensures they are setup identically.
+	for testtype in ('trusted', 'testing'):
 
-	# make trusted_tests directory it it doesn't already exist and cd to it.
-	if not os.path.exists("%s/trusted_tests"%(world.basedir)):
-		command = "mkdir"
-		arg1 = "-p"
-		arg2 = "%s/trusted_tests"%(world.basedir)
-		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+			if testtype == 'trusted':
+				test_url = world.trusted_url
+			elif testtype == 'testing':
+				test_url = world.testing_url
 
-	os.chdir("%s/trusted_tests"%(world.basedir))
+			# make trusted/testing_tests directory it it doesn't already exist and cd to it.
+			testpath = world.basedir + '/' + testtype + '_tests'
+			try: 
+				os.makedirs(testpath)
+			except OSError:
+				if not os.path.isdir(testpath):  # if the directory already exists, don't raise an error
+					raise
+			os.chdir(testpath)
 
-	# get test tarball if we don't already have it
-	if not os.path.exists("%s/trusted_tests/%s-2.0.tar.gz"%(world.basedir, world.test)):  # TODO Need to deal with version numbers
-		command = "wget"
-		arg1 = "%s/%s-2.0.tar.gz"%(world.trusted_url, world.test)  # TODO Need to deal with version numbers
-		subprocess.call([command, arg1], stdout=dev_null, stderr=dev_null)
+			# get test tarball if we don't already have it
+			if not os.path.exists(world.basedir + '/' + testtype + '_tests/' + world.test + '-2.0.tar.gz'):
+				try:
+					command = "wget"
+					arg1 = test_url+"/"+world.test+"-2.0.tar.gz"  # TODO Need to deal with version numbers
+					arg2 = "--trust-server-names"  # if the server redirects to an error page, this prevents that page from being named the test archive name - which is confusing!
+					subprocess.check_call([command, arg2, arg1], stdout=dev_null, stderr=dev_null)
+				except:
+					print "Error: unable to get test case archive\n"
+					raise
 
-	# untar test if not already done and make a default namelist
-	if not os.path.exists("%s/trusted_tests/%s"%(world.basedir, world.test)):
-		command = "tar"
-		arg1 = "xzf"
-		arg2 = "%s-2.0.tar.gz"%world.test  # TODO Need to deal with version numbers
-		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-		command = "cp"
-		arg1 = "%s/namelist.input"%world.test
-		arg2 = "%s/namelist.input.default"%world.test
-		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+			# untar test if not already done and make a default namelist
+			if not os.path.exists(world.basedir + '/' + testtype + '_tests/' + world.test):
+				try:
+					command = "tar"
+					arg1 = "xzf"
+					arg2 = world.test + "-2.0.tar.gz"  # TODO Need to deal with version numbers
+					subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+				except:
+					print "Error: unable to untar the archive file\n"
+					raise
+			#		try:
+			#			command = "cp"
+			#			arg1 = "%s/namelist.input"%world.test
+			#			arg2 = "%s/namelist.input.default"%world.test
+			#			subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+			#		except:
+			#			print "Error: unable to backup namelist\n"
+			#			raise
 
-	# go into the test directory
-	os.chdir("%s/trusted_tests/%s"%(world.basedir,world.test))
+			# go into the test directory
+			os.chdir(world.basedir + "/" + testtype + "_tests/" + world.test)
 
-	# link executable
-	command = "ln"
-	arg1 = "-s"
-	arg2 = "%s/trusted/landice_model"%(world.basedir)
-	arg3 = "landice_model_trusted"
-	subprocess.call([command, arg1, arg2, arg3], stdout=dev_null, stderr=dev_null)
+			# link executable
+			os.symlink(world.basedir+'/' + testtype + '/landice_model', 'landice_model_'+testtype)
 
-	# copy default namelist to standard namelist
-	command = "cp"
-	arg1 = "namelist.input.default"
-	arg2 = "namelist.input"
-	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+			#	# copy default namelist to standard namelist
+			#	command = "cp"
+			#	arg1 = "namelist.input.default"
+			#	arg2 = "namelist.input"
+			#	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-	# remove any output files
-	command = "rm"
-	arg1 = "-f"
-	arg2 = '\*.output.nc'
-	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+			# remove any output files
+			command = "rm"
+			arg1 = "-f"
+			arg2 = '\*.output.nc'
+			subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-	os.chdir(world.basedir)
-
-	# ===============
-	#Setup testing...
-	# ===============
-
-	# make testing_tests directory it it doesn't already exist and cd to it.
-	if not os.path.exists("%s/testing_tests"%(world.basedir)):
-		command = "mkdir"
-		arg1 = "-p"
-		arg2 = "%s/testing_tests"%(world.basedir)
-		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-
-	os.chdir("%s/testing_tests"%(world.basedir))
-
-	# get test tarball if we don't already have it
-	if not os.path.exists("%s/testing_tests/%s-2.0.tar.gz"%(world.basedir, world.test)):   # TODO Need to deal with version numbers
-		command = "wget"
-		arg1 = "%s/%s-2.0.tar.gz"%(world.testing_url, world.test)  # TODO Need to deal with version numbers
-		subprocess.call([command, arg1], stdout=dev_null, stderr=dev_null)
-
-	# untar test if not already done and make a default namelist
-	if not os.path.exists("%s/testing_tests/%s"%(world.basedir, world.test)):
-		command = "tar"
-		arg1 = "xzf"
-		arg2 = "%s-2.0.tar.gz"%world.test  # TODO Need to deal with version numbers
-		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-		command = "cp"
-		arg1 = "%s/namelist.input"%world.test
-		arg2 = "%s/namelist.input.default"%world.test
-		subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-
-	# go into the test directory
-	os.chdir("%s/testing_tests/%s"%(world.basedir,world.test))
-
-	# link executable
-	command = "ln"
-	arg1 = "-s"
-	arg2 = "%s/testing/landice_model"%(world.basedir)
-	arg3 = "landice_model_testing"
-	subprocess.call([command, arg1, arg2, arg3], stdout=dev_null, stderr=dev_null)
-
-	# copy default namelist to standard namelist
-	command = "cp"
-	arg1 = "namelist.input.default"
-	arg2 = "namelist.input"
-	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-
-	# remove any output files
-	command = "rm"
-	arg1 = "-f"
-	arg2 = '\*.output.nc'
-	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-
-	os.chdir(world.basedir)
+			os.chdir(world.basedir)
 
 
 # ==============================================================================
