@@ -6,16 +6,16 @@ Feature: Bit-Restartable simulations
 	Scenario: 4 vs 4 procs with dome shallow-ice
 		Given A setup test environment
 		Given A "dome" "sia" test
-		Given A 4 processor MPAS "landice_model_testing" run
-		Given A 4 processor MPAS "landice_model_testing" run with restart
+		When I perform a 4 processor MPAS "landice_model_testing" run
+		When I perform a 4 processor MPAS "landice_model_testing" run with restart
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
 
 	Scenario: 1 vs 4 procs with dome shallow-ice
 		Given A setup test environment
 		Given A "dome" "sia" test
-		Given A 1 processor MPAS "landice_model_testing" run
-		Given A 4 processor MPAS "landice_model_testing" run with restart
+		When I perform a 1 processor MPAS "landice_model_testing" run
+		When I perform a 4 processor MPAS "landice_model_testing" run with restart
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
 
