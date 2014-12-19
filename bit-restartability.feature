@@ -10,7 +10,6 @@ Feature: Bit-Restartable simulations
 		Given A 4 processor MPAS "landice_model_testing" run with restart
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
-		Then I clean the test directory
 
 	Scenario: 1 vs 4 procs with dome shallow-ice
 		Given A setup test environment
@@ -19,8 +18,5 @@ Feature: Bit-Restartable simulations
 		Given A 4 processor MPAS "landice_model_testing" run with restart
 		When I compute the RMS of "thickness"
 		Then I see "thickness" RMS of 0
-		Then I clean the test directory
-
-
 
 

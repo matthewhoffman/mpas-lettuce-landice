@@ -9,7 +9,6 @@ Feature: Reproduce Halfar analytic solution
 		Given A 1 processor MPAS "landice_model_testing" run
 		When I compute the Halfar RMS
 		Then I see Halfar thickness RMS of <10m
-		Then I clean the test directory
 
 	Scenario: 4 procs with dome shallow-ice
 		Given A setup test environment
@@ -17,5 +16,4 @@ Feature: Reproduce Halfar analytic solution
 		Given A 4 processor MPAS "landice_model_testing" run
 		When I compute the Halfar RMS
 		Then I see Halfar thickness RMS of <10m
-		Then I clean the test directory
 

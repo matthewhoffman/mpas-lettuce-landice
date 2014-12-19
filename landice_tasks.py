@@ -42,16 +42,18 @@ def get_test_case(step, test, velocity_solver):
 					print "Error: unable to get test case archive\n"
 					raise
 
-			# untar test if not already done and make a default namelist
-			if not os.path.exists(world.basedir + '/' + testtype + '_tests/' + world.test):
-				try:
-					command = "tar"
-					arg1 = "xzf"
-					arg2 = world.test + "-2.0.tar.gz"  # TODO Need to deal with version numbers
-					subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-				except:
-					print "Error: unable to untar the archive file\n"
-					raise
+			# delete test dir if it already exists.  Then untar it
+			thistestpath = world.basedir + '/' + testtype + '_tests/' + world.test
+			if os.path.exists(thistestpath):
+				shutil.rmtree(thistestpath)
+			try:
+				command = "tar"
+				arg1 = "xzf"
+				arg2 = world.test + "-2.0.tar.gz"  # TODO Need to deal with version numbers
+				subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+			except:
+				print "Error: unable to untar the archive file\n"
+				raise
 			#		try:
 			#			command = "cp"
 			#			arg1 = "%s/namelist.input"%world.test

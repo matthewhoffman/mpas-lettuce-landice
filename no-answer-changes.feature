@@ -12,7 +12,6 @@ Feature: No answer changes
 		Then I see "thickness" RMS of 0
 		When I compute the RMS of "normalVelocity"
 		Then I see "normalVelocity" RMS of 0
-		Then I clean the test directory
 
 	Scenario: 4 vs 4 procs with dome shallow-ice against trusted
 		Given A setup test environment
@@ -23,6 +22,4 @@ Feature: No answer changes
 		Then I see "thickness" RMS of 0
 		When I compute the RMS of "normalVelocity"
 		Then I see "normalVelocity" RMS of 0
-		Then I clean the test directory
-
 
