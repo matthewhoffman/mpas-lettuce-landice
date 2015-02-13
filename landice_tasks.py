@@ -21,6 +21,7 @@ def get_test_case(step, test):
 				test_url = world.trusted_url
 			elif testtype == 'testing':
 				test_url = world.testing_url
+			tc_version = test_url.split('release_')[1]  # get the part of this string after the bit that says 'release_', i.e., the version number
 
 			# make trusted/testing_tests directory it it doesn't already exist and cd to it.
 			testpath = world.basedir + '/' + testtype + '_tests'
@@ -32,10 +33,10 @@ def get_test_case(step, test):
 			os.chdir(testpath)
 
 			# get test tarball if we don't already have it
-			if not os.path.exists(world.basedir + '/' + testtype + '_tests/' + world.test + '-2.0.tar.gz'):
+			if not os.path.exists(world.basedir + '/' + testtype + '_tests/' + world.test + '-' + tc_version + '.tar.gz'):
 				try:
 					command = "wget"
-					arg1 = test_url+"/"+world.test+"-2.0.tar.gz"  # TODO Need to deal with version numbers
+					arg1 = test_url+"/"+world.test+"-"+tc_version+".tar.gz"
 					arg2 = "--trust-server-names"  # if the server redirects to an error page, this prevents that page from being named the test archive name - which is confusing!
 					subprocess.check_call([command, arg2, arg1], stdout=dev_null, stderr=dev_null)
 				except:
@@ -49,7 +50,7 @@ def get_test_case(step, test):
 			try:
 				command = "tar"
 				arg1 = "xzf"
-				arg2 = world.test + "-2.0.tar.gz"  # TODO Need to deal with version numbers
+				arg2 = world.test + "-" + tc_version + ".tar.gz"
 				subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 			except:
 				print "Error: unable to untar the archive file\n"
