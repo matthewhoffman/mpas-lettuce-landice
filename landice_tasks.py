@@ -10,7 +10,6 @@ dev_null = open(os.devnull, 'w')
 # ==============================================================================
 @step('A "([^"]*)" test for "([^"]*)"')
 def get_test_case(step, test, testtype):
-	world.basedir = os.getcwd()
 	world.test = "%s"%(test)
 	world.num_runs = 0
 
@@ -28,7 +27,7 @@ def get_test_case(step, test, testtype):
 		assert testcase_filename_error
 
 	# make trusted/testing_tests directory it it doesn't already exist and cd to it.
-	testpath = world.basedir + '/' + testtype + '_tests'
+	testpath = world.base_dir + '/' + testtype + '_tests'
 	try:
 		os.makedirs(testpath)
 	except OSError:
@@ -38,7 +37,7 @@ def get_test_case(step, test, testtype):
 
 	if world.clone == True:
 		# get test tarball if we don't already have it
-		if not os.path.exists(world.basedir + '/' + tc_filename):
+		if not os.path.exists(world.base_dir + '/' + tc_filename):
 			try:
 				subprocess.check_call(["wget", "--trust-server-names", test_url + "/" + tc_filename], stdout=dev_null, stderr=dev_null)
 				# "--trust-server-names"  if the server redirects to an error page, this prevents that page from being named the test archive name - which is confusing!
@@ -49,7 +48,7 @@ def get_test_case(step, test, testtype):
 		print "       Skipping retrieval of test case archive for " + testtype + " test because 'clone=off' in lettuce.landice.\n"
 
 	# delete test dir if it already exists.  Then untar it
-	thistestpath = world.basedir + '/' + testtype + '_tests/' + world.test
+	thistestpath = world.base_dir + '/' + testtype + '_tests/' + world.test
 	if os.path.exists(thistestpath):
 		shutil.rmtree(thistestpath)
 	try:
@@ -67,10 +66,10 @@ def get_test_case(step, test, testtype):
 	#			raise
 
 	# go into the test directory
-	os.chdir(world.basedir + "/" + testtype + "_tests/" + world.test)
+	os.chdir(world.base_dir + "/" + testtype + "_tests/" + world.test)
 
 	# link executable
-	os.symlink(world.basedir+'/' + testtype + '/landice_model', 'landice_model_'+testtype)
+	os.symlink(world.base_dir+'/' + testtype + '/landice_model', 'landice_model_'+testtype)
 
 	#	# copy default namelist to standard namelist
 	#	command = "cp"
@@ -84,7 +83,7 @@ def get_test_case(step, test, testtype):
 	arg2 = '\*.output.nc'
 	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-	os.chdir(world.basedir)
+	os.chdir(world.base_dir)
 
 
 # ==============================================================================
