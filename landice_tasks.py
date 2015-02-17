@@ -8,86 +8,83 @@ dev_null = open(os.devnull, 'w')
 #dev_null = None  # for debugging to see all errors
 
 # ==============================================================================
-@step('A "([^"]*)" test')
-def get_test_case(step, test):
+@step('A "([^"]*)" test for "([^"]*)"')
+def get_test_case(step, test, testtype):
 	world.basedir = os.getcwd()
 	world.test = "%s"%(test)
 	world.num_runs = 0
 
-	# Setup both "trusted_tests" and "testing_tests" directories.  This loop ensures they are setup identically.
-	for testtype in ('trusted', 'testing'):
+	if testtype == 'trusted':
+		test_url = world.trusted_url
+	elif testtype == 'testing':
+		test_url = world.testing_url
+	tc_version_info = test_url.split('release_')  # try to get the part of this string after the bit that says 'release_', i.e., the version number
+	if len(tc_version_info) == 2:
+		tc_filename = world.test + '-' + tc_version_info[1] + '.tar.gz'
+	elif len(tc_version_info) == 1:
+		tc_filename = world.test + '.tar.gz'
+	else:
+		print 'Error: Unable to determine test case filename!'
+		assert testcase_filename_error
 
-			if testtype == 'trusted':
-				test_url = world.trusted_url
-			elif testtype == 'testing':
-				test_url = world.testing_url
-			tc_version_info = test_url.split('release_')  # try to get the part of this string after the bit that says 'release_', i.e., the version number
-			if len(tc_version_info) == 2:
-				tc_filename = world.test + '-' + tc_version_info[1] + '.tar.gz'
-			elif len(tc_version_info) == 1:
-				tc_filename = world.test + '.tar.gz'
-			else:
-				print 'Error: Unable to determine test case filename!'
-				assert testcase_filename_error
+	# make trusted/testing_tests directory it it doesn't already exist and cd to it.
+	testpath = world.basedir + '/' + testtype + '_tests'
+	try:
+		os.makedirs(testpath)
+	except OSError:
+		if not os.path.isdir(testpath):  # if the directory already exists, don't raise an error
+			raise
+	os.chdir(testpath)
 
-			# make trusted/testing_tests directory it it doesn't already exist and cd to it.
-			testpath = world.basedir + '/' + testtype + '_tests'
-			try: 
-				os.makedirs(testpath)
-			except OSError:
-				if not os.path.isdir(testpath):  # if the directory already exists, don't raise an error
-					raise
-			os.chdir(testpath)
-
-			if world.clone == True:
-				# get test tarball if we don't already have it
-				if not os.path.exists(world.basedir + '/' + tc_filename):
-					try:
-						subprocess.check_call(["wget", "--trust-server-names", test_url + "/" + tc_filename], stdout=dev_null, stderr=dev_null)
-						# "--trust-server-names"  if the server redirects to an error page, this prevents that page from being named the test archive name - which is confusing!
-					except:
-						print "Error: unable to get test case archive\n"
-						raise
-			else:
-				print "       Skipping retrieval of test case archive for " + testtype + " test because 'clone=off' in lettuce.landice.\n"
-
-			# delete test dir if it already exists.  Then untar it
-			thistestpath = world.basedir + '/' + testtype + '_tests/' + world.test
-			if os.path.exists(thistestpath):
-				shutil.rmtree(thistestpath)
+	if world.clone == True:
+		# get test tarball if we don't already have it
+		if not os.path.exists(world.basedir + '/' + tc_filename):
 			try:
-				subprocess.check_call(["tar", "xzf", tc_filename], stdout=dev_null, stderr=dev_null)
+				subprocess.check_call(["wget", "--trust-server-names", test_url + "/" + tc_filename], stdout=dev_null, stderr=dev_null)
+				# "--trust-server-names"  if the server redirects to an error page, this prevents that page from being named the test archive name - which is confusing!
 			except:
-				print "Error: unable to untar the archive file\n"
+				print "Error: unable to get test case archive: " + test_url + "/" + tc_filename + "\n"
 				raise
-			#		try:
-			#			command = "cp"
-			#			arg1 = "%s/namelist.input"%world.test
-			#			arg2 = "%s/namelist.input.default"%world.test
-			#			subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
-			#		except:
-			#			print "Error: unable to backup namelist\n"
-			#			raise
+	else:
+		print "       Skipping retrieval of test case archive for " + testtype + " test because 'clone=off' in lettuce.landice.\n"
 
-			# go into the test directory
-			os.chdir(world.basedir + "/" + testtype + "_tests/" + world.test)
+	# delete test dir if it already exists.  Then untar it
+	thistestpath = world.basedir + '/' + testtype + '_tests/' + world.test
+	if os.path.exists(thistestpath):
+		shutil.rmtree(thistestpath)
+	try:
+		subprocess.check_call(["tar", "xzf", tc_filename], stdout=dev_null, stderr=dev_null)
+	except:
+		print "Error: unable to untar the archive file\n"
+		raise
+	#		try:
+	#			command = "cp"
+	#			arg1 = "%s/namelist.input"%world.test
+	#			arg2 = "%s/namelist.input.default"%world.test
+	#			subprocess.check_call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+	#		except:
+	#			print "Error: unable to backup namelist\n"
+	#			raise
 
-			# link executable
-			os.symlink(world.basedir+'/' + testtype + '/landice_model', 'landice_model_'+testtype)
+	# go into the test directory
+	os.chdir(world.basedir + "/" + testtype + "_tests/" + world.test)
 
-			#	# copy default namelist to standard namelist
-			#	command = "cp"
-			#	arg1 = "namelist.input.default"
-			#	arg2 = "namelist.input"
-			#	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+	# link executable
+	os.symlink(world.basedir+'/' + testtype + '/landice_model', 'landice_model_'+testtype)
 
-			# remove any output files
-			command = "rm"
-			arg1 = "-f"
-			arg2 = '\*.output.nc'
-			subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+	#	# copy default namelist to standard namelist
+	#	command = "cp"
+	#	arg1 = "namelist.input.default"
+	#	arg2 = "namelist.input"
+	#	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
 
-			os.chdir(world.basedir)
+	# remove any output files
+	command = "rm"
+	arg1 = "-f"
+	arg2 = '\*.output.nc'
+	subprocess.call([command, arg1, arg2], stdout=dev_null, stderr=dev_null)
+
+	os.chdir(world.basedir)
 
 
 # ==============================================================================
